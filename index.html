@@ -15,6 +15,7 @@
             --tech-white: #e0e0e0;
             --bg-dark: #050505;
             --panel-bg: #111;
+            --grid-bg: #080808;
         }
 
         body {
@@ -132,7 +133,7 @@
 
         /* Grid Layout - Fixed Width & Scrolling */
         .grid-wrapper {
-            background: #080808;
+            background: var(--grid-bg);
             border: 1px solid #222;
             padding: 10px;
             border-radius: 4px;
@@ -170,11 +171,18 @@
             border-radius: 2px;
             cursor: pointer;
             transition: all 0.1s;
+            box-sizing: border-box; /* Ensure border is inside */
         }
 
-        /* Beat Grouping (Every 4 steps) */
-        .step:nth-child(4n + 2) {
-            margin-right: 4px; /* Visual separation */
+        /* Beat Grouping (Every 4 steps) - FIXED SIZING ISSUE */
+        /* Targets the 4th, 8th, 12th items (indices 3, 7, 11) to create separation */
+        /* Child index: 1(Label) + 4 = 5th child (Step 3) */
+        .step:nth-child(4n + 5) {
+            border-right: 6px solid var(--grid-bg); /* Visual gap using border */
+        }
+        /* Last item doesn't need the border/gap */
+        .step:last-child {
+            border-right: 1px solid #2a2a2a;
         }
 
         .step:hover { background: #333; }
@@ -203,7 +211,14 @@
             background: #1a1a1a;
             border-radius: 2px;
             margin-bottom: 8px;
+            box-sizing: border-box;
         }
+        
+        /* Align indicators with steps */
+        .indicator:nth-child(4n + 5) {
+            border-right: 6px solid var(--grid-bg);
+        }
+
         .indicator.active {
             background: var(--tech-red);
             box-shadow: 0 0 8px var(--tech-red);
