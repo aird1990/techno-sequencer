@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Techno Step Sequencer - 20 Patterns</title>
+    <title>Techno Step Sequencer - Responsive</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Teko:wght@400;600&family=Roboto+Mono:wght@400;700&display=swap');
 
         :root {
             --tech-red: #ff3333;
+            --tech-dark-red: #880000;
             --tech-grey: #444;
             --tech-white: #e0e0e0;
             --bg-dark: #050505;
@@ -29,8 +30,20 @@
             box-sizing: border-box;
         }
 
-        *, *:before, *:after {
-            box-sizing: inherit;
+        /* Scrollbar styling for Webkit */
+        ::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--tech-red); 
         }
 
         h1 {
@@ -42,51 +55,33 @@
             margin-bottom: 20px;
             text-transform: uppercase;
             text-align: center;
+            line-height: 1;
         }
 
         .sequencer-container {
             background: var(--panel-bg);
             border: 1px solid #333;
             border-radius: 4px;
-            padding: 25px;
+            padding: 24px;
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
-            max-width: 100%;
             width: 100%;
-            overflow-x: auto;
+            max-width: 1000px; /* Wider max width */
         }
 
         /* Controls */
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 25px;
-            align-items: center;
-            justify-content: space-between;
-            background: #0a0a0a;
-            padding: 15px;
-            border: 1px solid #222;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
         .btn {
             background: #222;
             border: 1px solid #555;
             color: #aaa;
-            padding: 8px 20px;
+            padding: 8px 16px;
             cursor: pointer;
             font-family: inherit;
             font-weight: bold;
             text-transform: uppercase;
             transition: all 0.1s;
             border-radius: 2px;
-            touch-action: manipulation;
+            font-size: 0.85rem;
+            white-space: nowrap;
         }
 
         .btn:hover {
@@ -102,235 +97,218 @@
             box-shadow: 0 0 15px rgba(255, 51, 51, 0.4);
         }
 
-        .btn-blue {
-            border-color: #00ccff;
-            color: #00ccff;
-        }
-        .btn-blue:hover {
-            background: #00ccff;
-            color: #000;
-            box-shadow: 0 0 10px #00ccff;
-        }
+        .btn-blue { border-color: #00ccff; color: #00ccff; }
+        .btn-blue:hover { background: #00ccff; color: #000; box-shadow: 0 0 10px #00ccff; }
 
-        .btn-danger {
-            border-color: #800;
-            color: #d00;
-        }
-        .btn-danger:hover {
-            background: #300;
-            color: #f00;
-            border-color: #f00;
-        }
+        .btn-danger { border-color: #800; color: #d00; }
+        .btn-danger:hover { background: #300; color: #f00; border-color: #f00; }
 
         select {
-            background: #000;
+            background: #0a0a0a;
             color: var(--tech-white);
             border: 1px solid #444;
             padding: 8px;
             font-family: inherit;
             border-radius: 2px;
-            min-width: 200px;
-            width: 100%;
-            touch-action: manipulation;
-        }
-
-        .slider-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-            justify-content: space-between;
+            outline: none;
         }
 
         input[type="range"] {
             accent-color: var(--tech-red);
-            flex-grow: 1;
-            min-width: 100px;
-            touch-action: manipulation;
+            cursor: pointer;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--tech-red);
+            border-radius: 50%;
+            cursor: pointer;
         }
 
-        /* Grid */
-        .grid-container {
+        /* Grid Layout - Fixed Width & Scrolling */
+        .grid-wrapper {
+            background: #080808;
+            border: 1px solid #222;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .grid-scroll-area {
+            overflow-x: auto;
+            padding-bottom: 10px; /* Space for scrollbar */
+        }
+
+        .grid-fixed-width {
+            min-width: 680px; /* Ensures grid never squishes too small */
+        }
+
+        .grid-row {
             display: grid;
             grid-template-columns: 80px repeat(16, 1fr);
-            gap: 2px;
-            margin-bottom: 8px;
+            gap: 4px;
+            margin-bottom: 6px;
+            align-items: center;
         }
 
         .track-label {
-            display: flex;
-            align-items: center;
             font-weight: bold;
             color: #666;
             font-size: 0.8em;
             letter-spacing: 1px;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            text-transform: uppercase;
         }
 
         .step {
             aspect-ratio: 1;
             background: #1e1e1e;
             border: 1px solid #2a2a2a;
-            border-radius: 1px;
+            border-radius: 2px;
             cursor: pointer;
-            transition: background 0.05s;
-            touch-action: manipulation;
+            transition: all 0.1s;
         }
 
-        .step:nth-child(4n + 2) { 
-            border-right: 1px solid #444; /* Beat separator */
+        /* Beat Grouping (Every 4 steps) */
+        .step:nth-child(4n + 2) {
+            margin-right: 4px; /* Visual separation */
         }
+
+        .step:hover { background: #333; }
 
         .step.active {
             background: #888;
             box-shadow: 0 0 5px rgba(255,255,255,0.2);
+            border-color: #aaa;
         }
         
-        /* Techno Color Scheme: Industrial / Red */
-        .row-kick .step.active { background: var(--tech-red); box-shadow: 0 0 10px var(--tech-red); }
-        .row-clap .step.active { background: #ffaa00; box-shadow: 0 0 8px #ffaa00; }
-        .row-hihat .step.active { background: #00ccff; box-shadow: 0 0 8px #00ccff; }
-        .row-openhat .step.active { background: #fff; box-shadow: 0 0 8px #fff; }
+        /* Techno Color Scheme */
+        .row-kick .step.active { background: var(--tech-red); box-shadow: 0 0 12px var(--tech-red); border-color: #ff8888; }
+        .row-clap .step.active { background: #ffaa00; box-shadow: 0 0 10px #ffaa00; border-color: #ffcc66; }
+        .row-hihat .step.active { background: #00ccff; box-shadow: 0 0 10px #00ccff; border-color: #88eeff; }
+        .row-openhat .step.active { background: #fff; box-shadow: 0 0 10px #fff; border-color: #fff; }
 
         .step.playing {
-            border-color: white;
-            filter: brightness(1.5);
-            transform: scale(1.05);
+            transform: scale(1.15);
+            border: 1px solid #fff !important;
+            z-index: 10;
+            filter: brightness(1.3);
         }
 
-        .indicator-row {
-            height: 6px;
-            margin-bottom: 4px;
-        }
-        
         .indicator {
-            width: 100%;
-            height: 100%;
-            background: #111;
+            height: 4px;
+            background: #1a1a1a;
+            border-radius: 2px;
+            margin-bottom: 8px;
         }
         .indicator.active {
             background: var(--tech-red);
+            box-shadow: 0 0 8px var(--tech-red);
         }
 
-        .bpm-display {
-            font-size: 1.2em;
-            color: var(--tech-red);
-            font-weight: bold;
-            width: 40px;
-            text-align: right;
-            display: inline-block;
-        }
-        
         .description {
             margin-top: 15px;
-            font-size: 0.85em;
-            color: #666;
+            font-size: 0.75rem;
+            color: #555;
             text-transform: uppercase;
             letter-spacing: 1px;
             text-align: center;
-            height: 20px;
         }
 
-        .grid-wrapper {
-            padding: 10px;
-            background: #080808;
-            border: 1px solid #222;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            h1 { font-size: 2.2rem; }
-            .controls { flex-direction: column; align-items: stretch; padding: 15px; gap: 15px; }
-            .flex.flex-col.gap-2 { width: 100%; }
-            .slider-group { justify-content: space-between; }
-            .btn { padding: 10px 12px; font-size: 0.8rem; flex: 1; min-width: 45%; }
-            .sequencer-container { padding: 15px; }
-            .grid-container, .indicator-row { grid-template-columns: 50px repeat(16, 1fr); gap: 2px; }
-            .track-label { font-size: 0.7em; letter-spacing: 0; }
-        }
-
-        @media (max-width: 480px) {
-            body { padding: 10px; }
-            h1 { font-size: 1.8rem; }
-            .grid-container, .indicator-row { grid-template-columns: 35px repeat(16, 1fr); }
-            .track-label { font-size: 0.55em; line-height: 1.1; word-wrap: break-word; }
-            .grid-wrapper { padding: 5px; }
+        /* Responsive Adjustments */
+        @media (max-width: 640px) {
+            h1 { font-size: 2rem; }
+            .sequencer-container { padding: 12px; }
+            .btn { padding: 8px 12px; font-size: 0.75rem; }
+            .track-label { font-size: 0.7rem; }
         }
     </style>
 </head>
 <body>
 
-    <h1>TECHNO MATRIX 20</h1>
+    <h1>TECHNO MATRIX</h1>
 
     <div class="sequencer-container">
-        <!-- Controls -->
-        <div class="controls">
-            <div class="btn-group">
+        <!-- Main Controls -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <!-- Transport -->
+            <div class="flex gap-2 flex-wrap">
                 <button id="playBtn" class="btn">▶ RUN</button>
                 <button id="stopBtn" class="btn">■ STOP</button>
                 <button id="clearBtn" class="btn btn-danger">CLEAR</button>
                 <button id="exportBtn" class="btn btn-blue">MIDI ↓</button>
             </div>
             
-            <div class="flex flex-col gap-2 w-full md:w-auto">
-                <div class="slider-group">
-                    <span class="text-sm text-gray-500 w-10">BPM:</span>
-                    <input type="range" id="bpmSlider" min="110" max="150" value="130">
-                    <span id="bpmVal" class="bpm-display">130</span>
+            <!-- Sliders -->
+            <div class="flex flex-wrap gap-4 items-center flex-grow justify-end">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500 font-bold">BPM</span>
+                    <input type="range" id="bpmSlider" min="110" max="150" value="130" class="w-24 sm:w-32">
+                    <span id="bpmVal" class="text-red-500 font-bold w-8 text-right">130</span>
                 </div>
-                <div class="slider-group">
-                    <span class="text-sm text-gray-500 w-10">VOL:</span>
-                    <input type="range" id="volSlider" min="0" max="100" value="80">
-                    <span id="volVal" class="bpm-display" style="color:#aaa;">80%</span>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500 font-bold">VOL</span>
+                    <input type="range" id="volSlider" min="0" max="100" value="80" class="w-20 sm:w-24">
+                    <span id="volVal" class="text-gray-400 text-xs w-8 text-right">80%</span>
                 </div>
             </div>
 
-            <div class="w-full md:w-auto">
-                <select id="presetSelect">
-                    <option value="" disabled selected>LOAD PATTERN...</option>
-                    <!-- Options populated by JS -->
-                </select>
-            </div>
+            <!-- Preset Select -->
+            <select id="presetSelect" class="w-full sm:w-auto text-sm">
+                <option value="" disabled selected>LOAD PATTERN...</option>
+            </select>
         </div>
 
-        <div id="patternName" class="text-center text-red-500 font-bold mb-4 h-6 uppercase tracking-widest">MANUAL MODE</div>
+        <!-- Pattern Info -->
+        <div class="text-center mb-4">
+            <div id="patternName" class="text-red-500 font-bold text-lg uppercase tracking-widest leading-none">MANUAL MODE</div>
+            <div id="descDisplay" class="text-gray-600 text-xs mt-1 h-4">System Ready.</div>
+        </div>
 
-        <!-- Sequencer Grid -->
+        <!-- Sequencer Grid (Scrollable) -->
         <div class="grid-wrapper">
-            <!-- Indicators -->
-            <div class="grid-container" id="indicators">
-                <div></div> <!-- Spacer -->
-                <!-- Indicators injected here -->
-            </div>
+            <div class="grid-scroll-area">
+                <div class="grid-fixed-width">
+                    <!-- Indicators -->
+                    <div class="grid-row mb-2" id="indicators-row">
+                        <div></div> <!-- Spacer for label column -->
+                        <!-- Indicators injected here -->
+                    </div>
 
-            <!-- Open Hi-Hat -->
-            <div class="grid-container row-openhat" id="row-openhat">
-                <div class="track-label">OH</div>
-                <!-- Steps injected here -->
-            </div>
+                    <!-- Open Hi-Hat -->
+                    <div class="grid-row row-openhat" id="row-openhat">
+                        <div class="track-label">OH</div>
+                        <!-- Steps injected here -->
+                    </div>
 
-            <!-- Closed Hi-Hat -->
-            <div class="grid-container row-hihat" id="row-hihat">
-                <div class="track-label">CH</div>
-                <!-- Steps injected here -->
-            </div>
+                    <!-- Closed Hi-Hat -->
+                    <div class="grid-row row-hihat" id="row-hihat">
+                        <div class="track-label">CH</div>
+                        <!-- Steps injected here -->
+                    </div>
 
-            <!-- Clap/Snare -->
-            <div class="grid-container row-clap" id="row-clap">
-                <div class="track-label">CLAP</div>
-                <!-- Steps injected here -->
-            </div>
+                    <!-- Clap/Snare -->
+                    <div class="grid-row row-clap" id="row-clap">
+                        <div class="track-label">CLAP</div>
+                        <!-- Steps injected here -->
+                    </div>
 
-            <!-- Kick -->
-            <div class="grid-container row-kick" id="row-kick">
-                <div class="track-label">KICK</div>
-                <!-- Steps injected here -->
+                    <!-- Kick -->
+                    <div class="grid-row row-kick" id="row-kick">
+                        <div class="track-label">KICK</div>
+                        <!-- Steps injected here -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="description" id="descDisplay">System Ready.</div>
+    <div class="description">
+        909-Style Synthesis Engine // Web Audio API
+    </div>
 
     <script>
         // --- Audio Context & Synthesis ---
@@ -369,7 +347,7 @@
             gainNode.gain.exponentialRampToValueAtTime(0.8, time + 0.05);
             gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.4);
             
-            // Add a subtle click for attack definition
+            // Click
             const clickOsc = audioCtx.createOscillator();
             const clickGain = audioCtx.createGain();
             clickOsc.connect(clickGain);
@@ -386,7 +364,6 @@
         }
 
         function playClap(time) {
-            // 909 Clap approximation (filtered noise with multiple envelopes)
             const bufferSize = audioCtx.sampleRate * 0.5;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
@@ -403,29 +380,25 @@
             filter.Q.value = 1;
 
             const gainNode = audioCtx.createGain();
-            
             noise.connect(filter);
             filter.connect(gainNode);
             gainNode.connect(masterGainNode);
             
-            // Envelope - rough clap shape
+            // Envelope
             gainNode.gain.setValueAtTime(0, time);
             gainNode.gain.linearRampToValueAtTime(0.8, time + 0.005);
             gainNode.gain.exponentialRampToValueAtTime(0.1, time + 0.05);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.2); // Tail
+            gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.2); 
 
             noise.start(time);
             noise.stop(time + 0.2);
         }
 
         function playHiHat(time, open = false) {
-            // Metallic Noise (Multiple square waves + Highpass) for 909 feel
-            // Simplified here with noise + bandpass for web performance
             const bufferSize = audioCtx.sampleRate * 1;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
             for (let i = 0; i < bufferSize; i++) {
-                // High frequency noise
                 data[i] = (Math.random() * 2 - 1); 
             }
 
@@ -437,7 +410,6 @@
             filter.frequency.value = 7000;
 
             const gainNode = audioCtx.createGain();
-            
             noise.connect(filter);
             filter.connect(gainNode);
             gainNode.connect(masterGainNode);
@@ -457,7 +429,7 @@
         let isPlaying = false;
         let currentStep = 0;
         let nextNoteTime = 0.0;
-        let bpm = 130; // Default Techno BPM
+        let bpm = 130; 
         let timerID;
         let lookahead = 25.0; 
         let scheduleAheadTime = 0.1;
@@ -470,33 +442,21 @@
             new Array(STEPS).fill(false)  // Kick
         ];
 
-        // --- MIDI Export Functions ---
+        // --- MIDI Export ---
         function exportMIDI() {
             const writeString = (view, offset, string) => {
-                for (let i = 0; i < string.length; i++) {
-                    view.setUint8(offset + i, string.charCodeAt(i));
-                }
+                for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
             };
-
             const writeVarInt = (data, val) => {
                 let buffer = val & 0x7F;
-                while ((val >>= 7)) {
-                    buffer <<= 8;
-                    buffer |= ((val & 0x7F) | 0x80);
-                }
-                while (true) {
-                    data.push(buffer & 0xFF);
-                    if (buffer & 0x80) buffer >>= 8;
-                    else break;
-                }
+                while ((val >>= 7)) { buffer <<= 8; buffer |= ((val & 0x7F) | 0x80); }
+                while (true) { data.push(buffer & 0xFF); if (buffer & 0x80) buffer >>= 8; else break; }
             };
 
             const PPQ = 480;
             const stepTicks = 120;
             let events = [];
-
-            // Mapping: 3=Kick(36), 2=Clap(39), 1=CH(42), 0=OH(46)
-            const noteMap = { 3: 36, 2: 39, 1: 42, 0: 46 };
+            const noteMap = { 3: 36, 2: 39, 1: 42, 0: 46 }; // Kick, Clap, CH, OH
 
             for (let step = 0; step < STEPS; step++) {
                 const tick = step * stepTicks;
@@ -508,149 +468,75 @@
                     }
                 }
             }
-
             events.sort((a, b) => a.tick - b.tick);
 
             let trackData = [];
             let lastTick = 0;
-
             events.forEach(e => {
                 const delta = e.tick - lastTick;
                 writeVarInt(trackData, delta);
-                trackData.push(e.type | 0x09);
-                trackData.push(e.note);
-                trackData.push(e.velocity);
+                trackData.push(e.type | 0x09); trackData.push(e.note); trackData.push(e.velocity);
                 lastTick = e.tick;
             });
+            writeVarInt(trackData, 0); trackData.push(0xFF, 0x2F, 0x00);
 
-            writeVarInt(trackData, 0);
-            trackData.push(0xFF, 0x2F, 0x00);
-
-            const headerSize = 14;
-            const trackHeaderSize = 8;
-            const totalSize = headerSize + trackHeaderSize + trackData.length;
+            const totalSize = 14 + 8 + trackData.length;
             const buffer = new ArrayBuffer(totalSize);
             const view = new DataView(buffer);
-
-            writeString(view, 0, 'MThd');
-            view.setUint32(4, 6);
-            view.setUint16(8, 0);
-            view.setUint16(10, 1);
-            view.setUint16(12, PPQ);
-
-            writeString(view, 14, 'MTrk');
-            view.setUint32(18, trackData.length);
-            
+            writeString(view, 0, 'MThd'); view.setUint32(4, 6); view.setUint16(8, 0); view.setUint16(10, 1); view.setUint16(12, PPQ);
+            writeString(view, 14, 'MTrk'); view.setUint32(18, trackData.length);
             const bytes = new Uint8Array(buffer);
-            for (let i = 0; i < trackData.length; i++) {
-                bytes[22 + i] = trackData[i];
-            }
+            for (let i = 0; i < trackData.length; i++) bytes[22 + i] = trackData[i];
 
             const blob = new Blob([bytes], { type: 'audio/midi' });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'techno_pattern.mid';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            const a = document.createElement('a'); a.href = url; a.download = 'techno_pattern.mid'; a.click();
         }
 
-        // --- 20 Techno Presets ---
-        // Format: [Kick indices], [Clap indices], [CH indices], [OH indices]
+        // --- 20 Presets ---
         const presets = [
-            { name: "1. The Floor (4/4)", desc: "Essential Techno foundation.", 
-              k: [0, 4, 8, 12], c: [4, 12], ch: [0,2,4,6,8,10,12,14], oh: [2, 6, 10, 14] },
-            
-            { name: "2. Off-Beat Hat", desc: "Classic driving rhythm.", 
-              k: [0, 4, 8, 12], c: [], ch: [], oh: [2, 6, 10, 14] },
-            
-            { name: "3. Dub Techno", desc: "Sparse and echoey.", 
-              k: [0, 4, 8, 12], c: [], ch: [0,1,3,4,5,7,8,9,11,12,13,15], oh: [2, 10] },
-            
-            { name: "4. Warehouse Rumble", desc: "Heavy kick with syncopation.", 
-              k: [0, 3, 4, 8, 11, 12], c: [4, 12], ch: [0,2,4,6,8,10,12,14], oh: [] },
-            
-            { name: "5. Minimal Tech", desc: "Clicky and stripped back.", 
-              k: [0, 8], c: [4, 12], ch: [2, 6, 10, 14], oh: [] },
-            
-            { name: "6. Hard Techno Gallop", desc: "Fast rolling bass feel.", 
-              k: [0, 3, 4, 7, 8, 11, 12, 15], c: [4, 12], ch: [0,2,4,6,8,10,12,14], oh: [2, 6, 10, 14] },
-            
-            { name: "7. Detroit", desc: "Soulful syncopation.", 
-              k: [0, 4, 8, 12], c: [4, 12], ch: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], oh: [2, 6, 10, 14] },
-            
-            { name: "8. Acid Pattern", desc: "Simple drive for 303s.", 
-              k: [0, 4, 8, 12], c: [4, 12], ch: [0, 2, 4, 6, 8, 10, 12, 14], oh: [14] },
-            
-            { name: "9. Peak Time", desc: "Maximum energy for the main room.", 
-              k: [0, 4, 8, 12], c: [4, 12], ch: [0,2,4,6,8,10,12,14], oh: [2,6,10,14] },
-            
-            { name: "10. Industrial", desc: "Marching and heavy.", 
-              k: [0, 2, 4, 6, 8, 10, 12, 14], c: [4, 12], ch: [], oh: [0, 8] },
-            
-            { name: "11. 90s Loop", desc: "Old school rave vibe.", 
-              k: [0, 4, 8, 12], c: [4, 12, 14], ch: [2, 6, 10, 14], oh: [10] },
-            
-            { name: "12. Schranz Style", desc: "Distorted and relentless.", 
-              k: [0, 4, 8, 12], c: [2, 6, 10, 14], ch: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], oh: [] },
-            
-            { name: "13. Deep Tech", desc: "Subtle groove.", 
-              k: [0, 4, 8, 12], c: [], ch: [2, 6, 10, 14], oh: [14] },
-            
-            { name: "14. Broken Techno", desc: "Non-linear kick pattern.", 
-              k: [0, 3, 6, 10, 12], c: [4, 12], ch: [0, 8], oh: [2, 14] },
-            
-            { name: "15. Hypnotic", desc: "Repetitive trance-inducing.", 
-              k: [0, 4, 8, 12], c: [], ch: [0, 3, 6, 9, 12, 15], oh: [] },
-            
-            { name: "16. Berlin Sound", desc: "Dark and cavernous.", 
-              k: [0, 4, 8, 12], c: [12], ch: [2, 6, 10, 14], oh: [6] },
-            
-            { name: "17. Leftfield", desc: "Experimental placement.", 
-              k: [0, 5, 10], c: [4, 12], ch: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], oh: [0] },
-            
-            { name: "18. Big Room", desc: "Simple and effective.", 
-              k: [0, 4, 8, 12], c: [4, 12], ch: [], oh: [2, 6, 10, 14] },
-            
-            { name: "19. Tribal Tech", desc: "Percussive focus.", 
-              k: [0, 3, 8, 11], c: [4, 12], ch: [2,5,7,10,13,15], oh: [0] },
-            
-            { name: "20. The Closer", desc: "Aggressive finale.", 
-              k: [0, 2, 4, 6, 8, 10, 12, 14], c: [4, 12], ch: [0,2,4,6,8,10,12,14], oh: [0,2,4,6,8,10,12,14] }
+            { name: "1. The Floor (4/4)", desc: "Essential Techno foundation.", k: [0, 4, 8, 12], c: [4, 12], ch: [0,2,4,6,8,10,12,14], oh: [2, 6, 10, 14] },
+            { name: "2. Off-Beat Hat", desc: "Classic driving rhythm.", k: [0, 4, 8, 12], c: [], ch: [], oh: [2, 6, 10, 14] },
+            { name: "3. Dub Techno", desc: "Sparse and echoey.", k: [0, 4, 8, 12], c: [], ch: [0,1,3,4,5,7,8,9,11,12,13,15], oh: [2, 10] },
+            { name: "4. Warehouse Rumble", desc: "Heavy kick with syncopation.", k: [0, 3, 4, 8, 11, 12], c: [4, 12], ch: [0,2,4,6,8,10,12,14], oh: [] },
+            { name: "5. Minimal Tech", desc: "Clicky and stripped back.", k: [0, 8], c: [4, 12], ch: [2, 6, 10, 14], oh: [] },
+            { name: "6. Hard Techno Gallop", desc: "Fast rolling bass feel.", k: [0, 3, 4, 7, 8, 11, 12, 15], c: [4, 12], ch: [0,2,4,6,8,10,12,14], oh: [2, 6, 10, 14] },
+            { name: "7. Detroit", desc: "Soulful syncopation.", k: [0, 4, 8, 12], c: [4, 12], ch: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], oh: [2, 6, 10, 14] },
+            { name: "8. Acid Pattern", desc: "Simple drive for 303s.", k: [0, 4, 8, 12], c: [4, 12], ch: [0, 2, 4, 6, 8, 10, 12, 14], oh: [14] },
+            { name: "9. Peak Time", desc: "Maximum energy for the main room.", k: [0, 4, 8, 12], c: [4, 12], ch: [0,2,4,6,8,10,12,14], oh: [2,6,10,14] },
+            { name: "10. Industrial", desc: "Marching and heavy.", k: [0, 2, 4, 6, 8, 10, 12, 14], c: [4, 12], ch: [], oh: [0, 8] },
+            { name: "11. 90s Loop", desc: "Old school rave vibe.", k: [0, 4, 8, 12], c: [4, 12, 14], ch: [2, 6, 10, 14], oh: [10] },
+            { name: "12. Schranz Style", desc: "Distorted and relentless.", k: [0, 4, 8, 12], c: [2, 6, 10, 14], ch: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], oh: [] },
+            { name: "13. Deep Tech", desc: "Subtle groove.", k: [0, 4, 8, 12], c: [], ch: [2, 6, 10, 14], oh: [14] },
+            { name: "14. Broken Techno", desc: "Non-linear kick pattern.", k: [0, 3, 6, 10, 12], c: [4, 12], ch: [0, 8], oh: [2, 14] },
+            { name: "15. Hypnotic", desc: "Repetitive trance-inducing.", k: [0, 4, 8, 12], c: [], ch: [0, 3, 6, 9, 12, 15], oh: [] },
+            { name: "16. Berlin Sound", desc: "Dark and cavernous.", k: [0, 4, 8, 12], c: [12], ch: [2, 6, 10, 14], oh: [6] },
+            { name: "17. Leftfield", desc: "Experimental placement.", k: [0, 5, 10], c: [4, 12], ch: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], oh: [0] },
+            { name: "18. Big Room", desc: "Simple and effective.", k: [0, 4, 8, 12], c: [4, 12], ch: [], oh: [2, 6, 10, 14] },
+            { name: "19. Tribal Tech", desc: "Percussive focus.", k: [0, 3, 8, 11], c: [4, 12], ch: [2,5,7,10,13,15], oh: [0] },
+            { name: "20. The Closer", desc: "Aggressive finale.", k: [0, 2, 4, 6, 8, 10, 12, 14], c: [4, 12], ch: [0,2,4,6,8,10,12,14], oh: [0,2,4,6,8,10,12,14] }
         ];
 
-        // --- UI Generation ---
+        // --- UI ---
         function createGrid() {
             const rows = ['openhat', 'hihat', 'clap', 'kick'];
-            const indicators = document.getElementById('indicators');
+            const indRow = document.getElementById('indicators-row');
 
-            // Create Indicators
+            // Indicators
             for(let i=0; i<STEPS; i++) {
                 const div = document.createElement('div');
-                div.className = 'indicator-row';
-                const inner = document.createElement('div');
-                inner.className = 'indicator';
-                inner.id = `ind-${i}`;
-                div.appendChild(inner);
-                indicators.appendChild(div);
+                div.className = 'indicator';
+                div.id = `ind-${i}`;
+                indRow.appendChild(div);
             }
 
-            // Create Steps
+            // Steps
             rows.forEach((row, rowIndex) => {
                 const container = document.getElementById(`row-${row}`);
                 for (let i = 0; i < STEPS; i++) {
                     const btn = document.createElement('div');
                     btn.className = 'step';
                     btn.id = `${row}-${i}`;
-                    btn.dataset.row = rowIndex;
-                    btn.dataset.step = i;
-                    
-                    if ((i + 1) % 4 === 0 && i !== 15) {
-                        // Margin handled by css nth-child border in this theme
-                    }
-
                     btn.addEventListener('click', () => toggleStep(rowIndex, i));
                     container.appendChild(btn);
                 }
@@ -668,11 +554,7 @@
             rows.forEach((row, rowIndex) => {
                 for (let i = 0; i < STEPS; i++) {
                     const el = document.getElementById(`${row}-${i}`);
-                    if (gridState[rowIndex][i]) {
-                        el.classList.add('active');
-                    } else {
-                        el.classList.remove('active');
-                    }
+                    el.classList.toggle('active', gridState[rowIndex][i]);
                 }
             });
         }
@@ -680,43 +562,30 @@
         // --- Scheduler ---
         function nextNote() {
             const secondsPerBeat = 60.0 / bpm;
-            const secondsPerStep = secondsPerBeat / 4; 
-
-            nextNoteTime += secondsPerStep;
-            
-            currentStep++;
-            if (currentStep === STEPS) {
-                currentStep = 0;
-            }
+            nextNoteTime += 0.25 * secondsPerBeat;
+            currentStep = (currentStep + 1) % STEPS;
         }
 
         function scheduleNote(stepNumber, time) {
-            // Draw UI
             setTimeout(() => {
-                drawPlayhead(stepNumber);
+                document.querySelectorAll('.indicator').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.step').forEach(el => el.classList.remove('playing'));
+                
+                const ind = document.getElementById(`ind-${stepNumber}`);
+                if(ind) ind.classList.add('active');
+
+                const rows = ['openhat', 'hihat', 'clap', 'kick'];
+                rows.forEach((row, rIdx) => {
+                    if (gridState[rIdx][stepNumber]) {
+                        document.getElementById(`${row}-${stepNumber}`).classList.add('playing');
+                    }
+                });
             }, (time - audioCtx.currentTime) * 1000);
 
-            // Play Sounds (0=OH, 1=CH, 2=Clap, 3=Kick)
             if (gridState[0][stepNumber]) playHiHat(time, true);
             if (gridState[1][stepNumber]) playHiHat(time, false);
             if (gridState[2][stepNumber]) playClap(time);
             if (gridState[3][stepNumber]) playKick(time);
-        }
-
-        function drawPlayhead(stepNumber) {
-            document.querySelectorAll('.indicator').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.step').forEach(el => el.classList.remove('playing'));
-
-            const ind = document.getElementById(`ind-${stepNumber}`);
-            if(ind) ind.classList.add('active');
-
-            const rows = ['openhat', 'hihat', 'clap', 'kick'];
-            rows.forEach(row => {
-                const el = document.getElementById(`${row}-${stepNumber}`);
-                if (el.classList.contains('active')) {
-                    el.classList.add('playing');
-                }
-            });
         }
 
         function scheduler() {
@@ -729,12 +598,10 @@
 
         function play() {
             if (isPlaying) return;
-            
             initAudio();
             isPlaying = true;
             currentStep = 0;
             nextNoteTime = audioCtx.currentTime;
-            
             scheduler();
             document.getElementById('playBtn').classList.add('active');
             document.getElementById('stopBtn').classList.remove('active');
@@ -745,8 +612,6 @@
             clearTimeout(timerID);
             document.getElementById('playBtn').classList.remove('active');
             document.getElementById('stopBtn').classList.add('active');
-            
-            // Clear UI
             setTimeout(() => {
                  document.querySelectorAll('.indicator').forEach(el => el.classList.remove('active'));
                  document.querySelectorAll('.step').forEach(el => el.classList.remove('playing'));
@@ -755,80 +620,53 @@
         }
 
         function clearGrid() {
-            gridState = [
-                new Array(STEPS).fill(false),
-                new Array(STEPS).fill(false),
-                new Array(STEPS).fill(false),
-                new Array(STEPS).fill(false)
-            ];
+            gridState = Array(4).fill().map(() => Array(STEPS).fill(false));
             updateGridUI();
             document.getElementById('patternName').innerText = "EMPTY PATTERN";
             document.getElementById('descDisplay').innerText = "Ready to program.";
             document.getElementById('presetSelect').value = "";
         }
 
-        // --- Presets Logic ---
         function loadPreset(index) {
             clearGrid();
             const p = presets[index];
-            
-            // 0=OH, 1=CH, 2=Clap, 3=Kick
-            p.oh.forEach(step => gridState[0][step] = true);
-            p.ch.forEach(step => gridState[1][step] = true);
-            p.c.forEach(step => gridState[2][step] = true);
-            p.k.forEach(step => gridState[3][step] = true);
-
+            p.oh.forEach(s => gridState[0][s] = true);
+            p.ch.forEach(s => gridState[1][s] = true);
+            p.c.forEach(s => gridState[2][s] = true);
+            p.k.forEach(s => gridState[3][s] = true);
             updateGridUI();
             document.getElementById('patternName').innerText = p.name;
             document.getElementById('descDisplay').innerText = p.desc;
         }
 
-        function initPresets() {
-            const select = document.getElementById('presetSelect');
-            presets.forEach((p, index) => {
-                const opt = document.createElement('option');
-                opt.value = index;
-                opt.innerText = p.name;
-                select.appendChild(opt);
-            });
-
-            select.addEventListener('change', (e) => {
-                loadPreset(e.target.value);
-            });
-        }
-
-        // --- Setup ---
         window.addEventListener('load', () => {
             createGrid();
-            initPresets();
-            loadPreset(0); 
+            const sel = document.getElementById('presetSelect');
+            presets.forEach((p, i) => {
+                const opt = document.createElement('option');
+                opt.value = i; opt.innerText = p.name; sel.appendChild(opt);
+            });
+            sel.addEventListener('change', (e) => loadPreset(e.target.value));
 
             document.getElementById('playBtn').addEventListener('click', play);
             document.getElementById('stopBtn').addEventListener('click', stop);
             document.getElementById('clearBtn').addEventListener('click', clearGrid);
             document.getElementById('exportBtn').addEventListener('click', exportMIDI);
             
-            const bpmSlider = document.getElementById('bpmSlider');
-            const bpmVal = document.getElementById('bpmVal');
-            
-            bpmSlider.addEventListener('input', (e) => {
+            document.getElementById('bpmSlider').addEventListener('input', (e) => {
                 bpm = parseInt(e.target.value);
-                bpmVal.innerText = bpm;
+                document.getElementById('bpmVal').innerText = bpm;
             });
 
-            const volSlider = document.getElementById('volSlider');
-            const volVal = document.getElementById('volVal');
-            
-            volSlider.addEventListener('input', (e) => {
+            document.getElementById('volSlider').addEventListener('input', (e) => {
                 const val = parseInt(e.target.value);
-                volVal.innerText = val + "%";
+                document.getElementById('volVal').innerText = val + "%";
                 masterVolume = val / 100;
-                if(masterGainNode) {
-                    masterGainNode.gain.setValueAtTime(masterVolume, audioCtx.currentTime);
-                }
+                if(masterGainNode) masterGainNode.gain.setValueAtTime(masterVolume, audioCtx.currentTime);
             });
+            
+            loadPreset(0);
         });
-
     </script>
 </body>
 </html>
