@@ -179,7 +179,7 @@
         }
         .step.hidden-step { display: none; }
 
-        /* Beat Grouping (Every 4 steps) - using nth-of-type for visibility handling */
+        /* Beat Grouping (Every 4 steps) */
         .step:not(.hidden-step):nth-of-type(4n + 2) {
             border-left: 2px solid #444; 
         }
@@ -266,7 +266,8 @@
                     </div>
                 </div>
 
-                <div>
+                <div class="flex gap-2">
+                    <button id="settingsBtn" class="btn text-gray-400">⚙ SETTINGS</button>
                     <button id="exportBtn" class="btn btn-blue">MIDI ↓</button>
                 </div>
             </div>
@@ -310,7 +311,6 @@
                     <!-- Indicators -->
                     <div class="grid-row mb-2" id="indicators-row">
                         <div></div> <!-- Spacer -->
-                        <!-- Indicators injected -->
                     </div>
 
                     <!-- Tracks -->
@@ -333,6 +333,40 @@
     
     <div class="description">
         64-Step Techno Engine // 909 Synthesis
+    </div>
+
+    <!-- MIDI Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50">
+        <div class="bg-[#111] border border-[#333] p-6 rounded shadow-[0_0_30px_rgba(0,0,0,0.8)] w-full max-w-xs">
+            <h2 class="text-red-500 font-bold text-2xl mb-4 font-['Teko'] tracking-widest text-center">MIDI SETTINGS</h2>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <label class="text-sm font-bold text-gray-400">OPEN HAT</label>
+                    <input type="text" id="map-oh" class="bg-[#0a0a0a] border border-[#444] text-white p-1 w-16 text-center uppercase focus:border-red-500 outline-none">
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-sm font-bold text-gray-400">CLOSED HAT</label>
+                    <input type="text" id="map-ch" class="bg-[#0a0a0a] border border-[#444] text-white p-1 w-16 text-center uppercase focus:border-red-500 outline-none">
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-sm font-bold text-gray-400">CLAP</label>
+                    <input type="text" id="map-clap" class="bg-[#0a0a0a] border border-[#444] text-white p-1 w-16 text-center uppercase focus:border-red-500 outline-none">
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-sm font-bold text-gray-400">KICK</label>
+                    <input type="text" id="map-kick" class="bg-[#0a0a0a] border border-[#444] text-white p-1 w-16 text-center uppercase focus:border-red-500 outline-none">
+                </div>
+            </div>
+            <div class="text-xs text-gray-500 mt-4 text-center leading-relaxed">
+                Note Format: <span class="text-white">NoteName+Octave</span><br>
+                (e.g., C4, D#2)<br>
+                Roland Standard (C4 = 60)
+            </div>
+            <div class="flex justify-center gap-4 mt-6">
+                <button id="cancelSettingsBtn" class="btn">CANCEL</button>
+                <button id="saveSettingsBtn" class="btn btn-blue">SAVE</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -432,7 +466,34 @@
             new Array(STEPS).fill(false)  // Kick
         ];
 
-        // --- MIDI Export Function (Missing in previous version) ---
+        // --- MIDI Mapping Setup ---
+        // Default Map: 0=OH(46=A#2), 1=CH(42=F#2), 2=Clap(39=D#2), 3=Kick(36=C2)
+        let midiMapping = { 0: 46, 1: 42, 2: 39, 3: 36 };
+
+        function noteNameToNumber(noteStr) {
+            const regex = /^\s*([a-gA-G]#?)\s*(-?\d+)\s*$/;
+            const match = noteStr.match(regex);
+            if (!match) return null;
+            let note = match[1].toUpperCase();
+            const octave = parseInt(match[2], 10);
+            const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const noteIndex = notes.indexOf(note);
+            if (noteIndex === -1) return null;
+            // Roland Standard: C4 = 60
+            const num = (octave + 1) * 12 + noteIndex;
+            if (num < 0 || num > 127) return null;
+            return num;
+        }
+
+        function numberToNoteName(noteNum) {
+            if (noteNum < 0 || noteNum > 127) return "---";
+            const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const octave = Math.floor(noteNum / 12) - 1;
+            const noteIndex = noteNum % 12;
+            return notes[noteIndex] + octave;
+        }
+
+        // --- MIDI Export Function ---
         function exportMIDI() {
             const writeString = (view, offset, string) => {
                 for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
@@ -454,14 +515,12 @@
             const PPQ = 480;
             const stepTicks = 120; // 16th note
             let events = [];
-            // Map: 0=OH(46), 1=CH(42), 2=Clap(39), 3=Kick(36)
-            const noteMap = { 0: 46, 1: 42, 2: 39, 3: 36 };
 
             for (let step = 0; step < STEPS; step++) {
                 const tick = step * stepTicks;
                 for (let row = 0; row < 4; row++) {
                     if (gridState[row][step]) {
-                        const note = noteMap[row];
+                        const note = midiMapping[row];
                         events.push({ tick: tick, type: 0x90, note: note, velocity: 100 });
                         events.push({ tick: tick + 60, type: 0x80, note: note, velocity: 0 });
                     }
@@ -499,43 +558,43 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); 
             a.href = url; 
-            a.download = `techno_pattern_64_${Date.now()}.mid`; 
+            a.download = `techno_pattern_64.mid`; 
             a.click();
             URL.revokeObjectURL(url);
         }
 
-        // --- 30 Techno Presets ---
+        // --- 30 Techno Presets (With Fill-ins on Bar 4: steps 48-63) ---
         const presets = [
-            { name: "1. The Floor (Standard)", desc: "The foundation of all Techno. Kick on every beat.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [4,12,20,28,36,44,52,60], ch: [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62], oh: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62] },
-            { name: "2. Off-Beat Drive", desc: "Classic driving rhythm with emphasis on the off-beat OH.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [], ch: [], oh: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62] },
-            { name: "3. Dub Techno", desc: "Sparse, echoey feel with chord-like stabs (Clap/OH).", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [], ch: [0,1,3,4,5,7,8,9,11,12,13,15,16,17,19,20,21,23,24,25,27,28,29,31], oh: [2,10,18,26,34,42,50,58] },
-            { name: "4. Warehouse Rumble", desc: "Low-end focus with syncopated kicks creating a rumble feel.", k: [0,3,4,8,11,12,16,19,20,24,27,28,32,35,36,40,43,44,48,51,52,56,59,60], c: [4,12,20,28,36,44,52,60], ch: Array.from({length:64},(_,i)=>i).filter(i=>i%2==0), oh: [] },
-            { name: "5. Minimal Tech", desc: "Stripped back, clicky and precise.", k: [0,8,16,24,32,40,48,56], c: [4,12,20,28,36,44,52,60], ch: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], oh: [] },
-            { name: "6. Hard Techno Gallop", desc: "Fast rolling bass feel (Kick-Kick-Kick-).", k: [0,3,4,7,8,11,12,15,16,19,20,23,24,27,28,31,32,35,36,39,40,43,44,47,48,51,52,55,56,59,60,63], c: [4,12,20,28,36,44,52,60], ch: [], oh: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62] },
-            { name: "7. Detroit Sync", desc: "Soulful syncopation inspired by the Motor City.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [4,12,20,28,36,44,52,60], ch: [0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60,63], oh: [2,10,18,26,34,42,50,58] },
-            { name: "8. Acid Drive", desc: "Simple, relentless drive for 303 basslines.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [4,12,20,28,36,44,52,60], ch: [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62], oh: [14,30,46,62] },
-            { name: "9. Peak Time", desc: "Maximum energy for the main room. Full 16ths.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [4,12,20,28,36,44,52,60], ch: Array.from({length:64},(_,i)=>i).filter(i=>i%2==0), oh: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62] },
-            { name: "10. Industrial March", desc: "Marching, heavy, distorted feel.", k: [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62], c: [4,12,20,28,36,44,52,60], ch: [], oh: [0,8,16,24,32,40,48,56] },
-            { name: "11. 90s Rave Loop", desc: "Old school rave vibe with extra claps.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [4,12,14,20,28,30,36,44,46,52,60,62], ch: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], oh: [10,26,42,58] },
-            { name: "12. Schranz Style", desc: "Distorted, relentless, minimal percussion.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], ch: Array.from({length:64},(_,i)=>i), oh: [] },
-            { name: "13. Deep Tech Groove", desc: "Subtle groove with delayed hats.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [], ch: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], oh: [14,30,46,62] },
-            { name: "14. Broken Techno", desc: "Non-linear kick pattern. UK Techno style.", k: [0,3,6,10,12,16,19,22,26,28,32,35,38,42,44,48,51,54,58,60], c: [4,12,20,28,36,44,52,60], ch: [0,8,16,24,32,40,48,56], oh: [2,14,18,30,34,46,50,62] },
-            { name: "15. Hypnotic Loop", desc: "Repetitive, trance-inducing polyrhythm.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [], ch: [0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60,63], oh: [] },
-            { name: "16. Berlin Sound", desc: "Dark and cavernous. Kick focus.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [12,28,44,60], ch: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], oh: [6,22,38,54] },
-            { name: "17. Leftfield Exp", desc: "Experimental placement.", k: [0,5,10,16,21,26,32,37,42,48,53,58], c: [4,12,20,28,36,44,52,60], ch: Array.from({length:64},(_,i)=>i), oh: [0,16,32,48] },
-            { name: "18. Big Room Simple", desc: "Simple and effective for big systems.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [4,12,20,28,36,44,52,60], ch: [], oh: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62] },
-            { name: "19. Tribal Tech", desc: "Percussive focus.", k: [0,3,8,11,16,19,24,27,32,35,40,43,48,51,56,59], c: [4,12,20,28,36,44,52,60], ch: [2,5,7,10,13,15,18,21,23,26,29,31,34,37,39,42,45,47,50,53,55,58,61,63], oh: [0,16,32,48] },
-            { name: "20. The Closer", desc: "Aggressive finale. Everything on.", k: [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62], c: [4,12,20,28,36,44,52,60], ch: Array.from({length:64},(_,i)=>i).filter(i=>i%2==0), oh: Array.from({length:64},(_,i)=>i).filter(i=>i%2==0) },
-            { name: "21. Rolling Bass", desc: "Kicks emphasizing the low end roll.", k: [0,3,8,11,14,16,19,24,27,30,32,35,40,43,46,48,51,56,59,62], c: [4,12,20,28,36,44,52,60], ch: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], oh: [] },
-            { name: "22. Syncopated Clap", desc: "Claps shifted to create groove.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [4,11,20,27,36,43,52,59], ch: [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62], oh: [14,30,46,62] },
-            { name: "23. Driving Force", desc: "Heavy hats driving the beat.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [4,12,20,28,36,44,52,60], ch: Array.from({length:64},(_,i)=>i), oh: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62] },
-            { name: "24. EBM Style", desc: "Electronic Body Music rhythm.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [4,12,20,28,36,44,52,60], ch: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], oh: [0,8,16,24,32,40,48,56] },
-            { name: "25. Forest Psy", desc: "Organic, fast shuffling.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [], ch: [0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60,63], oh: [2,14,18,30,34,46,50,62] },
-            { name: "26. Tech House Swing", desc: "Swingy hats over straight kicks.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [4,12,20,28,36,44,52,60], ch: [2,5,7,10,13,15,18,21,23,26,29,31,34,37,39,42,45,47,50,53,55,58,61,63], oh: [2,10,18,26,34,42,50,58] },
-            { name: "27. Ambient Techno", desc: "Very spacey, minimal hits.", k: [0,16,32,48], c: [], ch: [0,12,24,36,48,60], oh: [4,20,36,52] },
-            { name: "28. Polyrhythmic Feel", desc: "3 against 4 feel.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60,63], ch: [], oh: [] },
-            { name: "29. Breakbeat Techno", desc: "Breakbeat kick pattern at techno speed.", k: [0,3,9,14,16,19,25,30,32,35,41,46,48,51,57,62], c: [4,12,20,28,36,44,52,60], ch: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], oh: [14,30,46,62] },
-            { name: "30. The Build Up", desc: "Snare roll build up.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63], ch: [], oh: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60] }
+            { name: "1. The Floor (Standard)", desc: "The foundation of all Techno. Kick on every beat.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,58,60,62], c: [4,12,20,28,36,44,52,56,58,60,61,62,63], ch: [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62], oh: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62] },
+            { name: "2. Off-Beat Drive", desc: "Classic driving rhythm with emphasis on the off-beat OH.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,61,62,63], c: [60,62], ch: [], oh: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,60,62] },
+            { name: "3. Dub Techno", desc: "Sparse, echoey feel with chord-like stabs (Clap/OH).", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,58,60,62], c: [60], ch: [0,1,3,4,5,7,8,9,11,12,13,15,16,17,19,20,21,23,24,25,27,28,29,31], oh: [2,10,18,26,34,42,50,58,62] },
+            { name: "4. Warehouse Rumble", desc: "Low-end focus with syncopated kicks creating a rumble feel.", k: [0,3,4,8,11,12,16,19,20,24,27,28,32,35,36,40,43,44,48,51,52,56,58,59,60,61,62,63], c: [4,12,20,28,36,44,52,60,62], ch: Array.from({length:64},(_,i)=>i).filter(i=>i%2==0), oh: [] },
+            { name: "5. Minimal Tech", desc: "Stripped back, clicky and precise.", k: [0,8,16,24,32,40,48,56,60,62], c: [4,12,20,28,36,44,52,58,60,62,63], ch: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], oh: [] },
+            { name: "6. Hard Techno Gallop", desc: "Fast rolling bass feel (Kick-Kick-Kick-).", k: [0,3,4,7,8,11,12,15,16,19,20,23,24,27,28,31,32,35,36,39,40,43,44,47,48,51,52,55,56,58,59,60,61,62,63], c: [4,12,20,28,36,44,52,56,60,62], ch: [], oh: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62] },
+            { name: "7. Detroit Sync", desc: "Soulful syncopation inspired by the Motor City.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,58,60,61,62], c: [4,12,20,28,36,44,52,58,60,62], ch: [0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60,63], oh: [2,10,18,26,34,42,50,58] },
+            { name: "8. Acid Drive", desc: "Simple, relentless drive for 303 basslines.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,62,63], c: [4,12,20,28,36,44,52,58,60,62,63], ch: [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62], oh: [14,30,46,62] },
+            { name: "9. Peak Time", desc: "Maximum energy for the main room. Full 16ths.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,58,60,62,63], c: [4,12,20,28,36,44,52,56,58,60,61,62,63], ch: Array.from({length:64},(_,i)=>i).filter(i=>i%2==0), oh: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62] },
+            { name: "10. Industrial March", desc: "Marching, heavy, distorted feel.", k: [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,61,62,63], c: [4,12,20,28,36,44,52,56,60,62], ch: [], oh: [0,8,16,24,32,40,48,56] },
+            { name: "11. 90s Rave Loop", desc: "Old school rave vibe with extra claps.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,58,60,62], c: [4,12,14,20,28,30,36,44,46,52,56,58,60,61,62,63], ch: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], oh: [10,26,42,58] },
+            { name: "12. Schranz Style", desc: "Distorted, relentless, minimal percussion.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], c: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,60,61,62,63], ch: Array.from({length:64},(_,i)=>i), oh: [] },
+            { name: "13. Deep Tech Groove", desc: "Subtle groove with delayed hats.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,62], c: [60,62,63], ch: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], oh: [14,30,46,62] },
+            { name: "14. Broken Techno", desc: "Non-linear kick pattern. UK Techno style.", k: [0,3,6,10,12,16,19,22,26,28,32,35,38,42,44,48,51,54,58,60,62,63], c: [4,12,20,28,36,44,52,58,60,62], ch: [0,8,16,24,32,40,48,56], oh: [2,14,18,30,34,46,50,62] },
+            { name: "15. Hypnotic Loop", desc: "Repetitive, trance-inducing polyrhythm.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,58,60,61,62,63], c: [60,62,63], ch: [0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60,63], oh: [] },
+            { name: "16. Berlin Sound", desc: "Dark and cavernous. Kick focus.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,58,60,62,63], c: [12,28,44,60], ch: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], oh: [6,22,38,54] },
+            { name: "17. Leftfield Exp", desc: "Experimental placement.", k: [0,5,10,16,21,26,32,37,42,48,53,58,60,62], c: [4,12,20,28,36,44,52,58,60,62,63], ch: Array.from({length:64},(_,i)=>i), oh: [0,16,32,48] },
+            { name: "18. Big Room Simple", desc: "Simple and effective for big systems.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,58,60,61,62,63], c: [4,12,20,28,36,44,52,56,58,60,61,62,63], ch: [], oh: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62] },
+            { name: "19. Tribal Tech", desc: "Percussive focus.", k: [0,3,8,11,16,19,24,27,32,35,40,43,48,51,56,59,61,62,63], c: [4,12,20,28,36,44,52,58,60,62], ch: [2,5,7,10,13,15,18,21,23,26,29,31,34,37,39,42,45,47,50,53,55,58,61,63], oh: [0,16,32,48] },
+            { name: "20. The Closer", desc: "Aggressive finale. Everything on.", k: [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,63], c: [4,12,20,28,36,44,52,56,57,58,59,60,61,62,63], ch: Array.from({length:64},(_,i)=>i).filter(i=>i%2==0), oh: Array.from({length:64},(_,i)=>i).filter(i=>i%2==0) },
+            { name: "21. Rolling Bass", desc: "Kicks emphasizing the low end roll.", k: [0,3,8,11,14,16,19,24,27,30,32,35,40,43,46,48,51,56,59,62,63], c: [4,12,20,28,36,44,52,58,60,62], ch: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], oh: [] },
+            { name: "22. Syncopated Clap", desc: "Claps shifted to create groove.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,62,63], c: [4,11,20,27,36,43,52,59,61,62,63], ch: [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62], oh: [14,30,46,62] },
+            { name: "23. Driving Force", desc: "Heavy hats driving the beat.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,58,60,62], c: [4,12,20,28,36,44,52,58,60,62,63], ch: Array.from({length:64},(_,i)=>i), oh: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62] },
+            { name: "24. EBM Style", desc: "Electronic Body Music rhythm.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,58,60,61,62,63], c: [4,12,20,28,36,44,52,56,60,62], ch: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], oh: [0,8,16,24,32,40,48,56] },
+            { name: "25. Forest Psy", desc: "Organic, fast shuffling.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,58,60,62], c: [60,62,63], ch: [0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60,63], oh: [2,14,18,30,34,46,50,62] },
+            { name: "26. Tech House Swing", desc: "Swingy hats over straight kicks.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,58,60,62], c: [4,12,20,28,36,44,52,58,60,62,63], ch: [2,5,7,10,13,15,18,21,23,26,29,31,34,37,39,42,45,47,50,53,55,58,61,63], oh: [2,10,18,26,34,42,50,58] },
+            { name: "27. Ambient Techno", desc: "Very spacey, minimal hits.", k: [0,16,32,48,56,60], c: [60,62], ch: [0,12,24,36,48,60], oh: [4,20,36,52] },
+            { name: "28. Polyrhythmic Feel", desc: "3 against 4 feel.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,62,63], c: [0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60,62,63], ch: [], oh: [] },
+            { name: "29. Breakbeat Techno", desc: "Breakbeat kick pattern at techno speed.", k: [0,3,9,14,16,19,25,30,32,35,41,46,48,51,57,62,63], c: [4,12,20,28,36,44,52,58,60,61,62,63], ch: [2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62], oh: [14,30,46,62] },
+            { name: "30. The Build Up", desc: "Snare roll build up.", k: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,58,60,61,62,63], c: [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63], ch: [], oh: [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60] }
         ];
 
         // --- UI ---
@@ -544,11 +603,9 @@
             const indRow = document.getElementById('indicators-row');
             const root = document.querySelector('.grid-fixed-width');
 
-            // Clear existing (if any) - though run once on load
             indRow.innerHTML = '<div></div>'; 
             rows.forEach(r => document.getElementById(`row-${r}`).innerHTML = `<div class="track-label">${r.toUpperCase()}</div>`);
 
-            // Indicators
             for(let i=0; i<STEPS; i++) {
                 const div = document.createElement('div');
                 div.className = 'indicator';
@@ -558,7 +615,6 @@
                 indRow.appendChild(div);
             }
 
-            // Steps
             rows.forEach((row, rowIndex) => {
                 const container = document.getElementById(`row-${row}`);
                 for (let i = 0; i < STEPS; i++) {
@@ -577,12 +633,10 @@
         function switchBarView(barIdx) {
             currentBarView = parseInt(barIdx);
             
-            // Update buttons
             document.querySelectorAll('.bar-btn').forEach(btn => {
                 btn.classList.toggle('current', parseInt(btn.dataset.bar) === currentBarView);
             });
 
-            // Update Grid Visibility
             const elements = document.querySelectorAll('.step, .indicator');
             elements.forEach(el => {
                 if (el.dataset.bar == currentBarView) {
@@ -618,10 +672,8 @@
         }
 
         function scheduleNote(stepNumber, time) {
-            // Visuals
             setTimeout(() => {
                 requestAnimationFrame(() => {
-                    // Auto-Follow Logic
                     const stepBar = Math.floor(stepNumber / 16);
                     if (autoFollow && stepBar !== currentBarView) {
                         switchBarView(stepBar);
@@ -643,7 +695,6 @@
                 });
             }, (time - audioCtx.currentTime) * 1000);
 
-            // Audio
             if (gridState[0][stepNumber]) playHiHat(time, true);
             if (gridState[1][stepNumber]) playHiHat(time, false);
             if (gridState[2][stepNumber]) playClap(time);
@@ -681,7 +732,6 @@
             document.getElementById('playBtn').classList.remove('active');
             document.getElementById('stopBtn').classList.add('active');
             
-            // Clear only playing visuals (indicators and highlights), NOT grid active state
             setTimeout(() => {
                  document.querySelectorAll('.indicator.active').forEach(el => el.classList.remove('active'));
                  document.querySelectorAll('.step.playing').forEach(el => el.classList.remove('playing'));
@@ -699,7 +749,7 @@
 
         function loadPreset(index) {
             if (index === "") return;
-            gridState = Array(4).fill().map(() => Array(STEPS).fill(false)); // Clear first
+            gridState = Array(4).fill().map(() => Array(STEPS).fill(false)); 
             const p = presets[index];
             
             if(p.oh) p.oh.forEach(s => { if(s < STEPS) gridState[0][s] = true; });
@@ -723,7 +773,6 @@
                 });
             });
 
-            // Auto Follow
             document.getElementById('autoFollowCheck').addEventListener('change', (e) => {
                 autoFollow = e.target.checked;
             });
@@ -742,6 +791,39 @@
             document.getElementById('clearBtn').addEventListener('click', clearGrid);
             document.getElementById('exportBtn').addEventListener('click', exportMIDI);
             
+            // Settings Modal
+            const modal = document.getElementById('settingsModal');
+            document.getElementById('settingsBtn').addEventListener('click', () => {
+                document.getElementById('map-oh').value = numberToNoteName(midiMapping[0]);
+                document.getElementById('map-ch').value = numberToNoteName(midiMapping[1]);
+                document.getElementById('map-clap').value = numberToNoteName(midiMapping[2]);
+                document.getElementById('map-kick').value = numberToNoteName(midiMapping[3]);
+                modal.classList.remove('hidden');
+            });
+            
+            document.getElementById('cancelSettingsBtn').addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+            
+            document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+                const ohVal = noteNameToNumber(document.getElementById('map-oh').value);
+                const chVal = noteNameToNumber(document.getElementById('map-ch').value);
+                const clapVal = noteNameToNumber(document.getElementById('map-clap').value);
+                const kickVal = noteNameToNumber(document.getElementById('map-kick').value);
+                
+                if (ohVal === null || chVal === null || clapVal === null || kickVal === null) {
+                    alert("無効なノート名が含まれています。\n形式を確認してください（例: C4, D#2）。\n※半角英数・大文字小文字は区別しません。");
+                    return;
+                }
+                
+                midiMapping[0] = ohVal;
+                midiMapping[1] = chVal;
+                midiMapping[2] = clapVal;
+                midiMapping[3] = kickVal;
+                
+                modal.classList.add('hidden');
+            });
+
             // Sliders
             document.getElementById('bpmSlider').addEventListener('input', (e) => {
                 bpm = parseInt(e.target.value);
